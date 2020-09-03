@@ -21,19 +21,24 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
+    //cria socket
     struct sockaddr_storage addr_storage;
     int serverSocket = init_server(argv[1], &addr_storage);
-    struct sockaddr *addr = (struct sockaddr *)(&addr_storage); //type cast of address
+    struct sockaddr *addr = (struct sockaddr *)(&addr_storage);
 
+    //adiciona ao socket o endereço local
     if (bind(serverSocket, addr, sizeof(addr_storage)) != 0) {
         logError("Failed to bind.");
     }
 
+    //prepara para receber conexões
     if (listen(serverSocket, 10) != 0) {
         logError("Failed to listen.");
     }
 
     while (1) {
+
+        //recebe conexão do cliente
         struct sockaddr_storage client_storage;
         struct sockaddr *client_addr = (struct sockaddr *)(&client_storage);
         socklen_t client_addrlen = sizeof(client_storage);
@@ -43,7 +48,7 @@ int main(int argc, char **argv) {
             logError("Failed to accept new client connection");
         }
 
-        //send to client size of word
+        //envia ao cliente o tamanho da palavra
         char buf[BUFSZ];
         memset(buf, 0, BUFSZ);
         buf[0] = 1;
@@ -53,19 +58,22 @@ int main(int argc, char **argv) {
             logError("send size of word");
         }
 
+        //estrutura de dados para armazenar as letras adivinhadas
         struct Forca Forca;
         init_forca(&Forca);
-        count = 1;
+        
         while(1){
-            //waits for client guess
+            // recebe palpite do cliente
             memset(buf, 0, 2);
             recv(client_socket, buf, 2, 0);
             char c = buf[1];
             unsigned int oc_count;
             
+            //verifica se a letra está na palavra
             check_char_in_word(&Forca, c, &oc_count, buf);
             
-            //break loop if client guessed word
+            //idetifica se cliente já adivinhou a palavra
+            //e envia mensagem 4 se sim
             if (guessed_all(&Forca)){
                 buf[0] = 4;
                 count = send(client_socket, buf, 1, 0);
@@ -75,7 +83,7 @@ int main(int argc, char **argv) {
                 break;
             }
 
-            //sends to client answer for received character
+            //envia a resposta ao palpite ao cliente
             count = send(client_socket, buf, oc_count+2, 0);
             if (count != oc_count+2) {
                 logError("send size of word");

@@ -25,18 +25,18 @@ int main(int argc, char **argv) {
 	int ssocket = init_client(argv[1], argv[2], &storage);
 
 	char buf[BUFSZ];
-	//waits for server - size of word
+
+	//recebe do servidor o tamanho da palavra
 	memset(buf, 0, BUFSZ);
 	size_t count = recv(ssocket, buf, BUFSZ, 0);
-	//int type, charCount;
-	//sscanf(buf,"%i %i", &type, &charCount);
-	printf("Tamanho da palavra recebida do servidor: %i\n", buf[1]);
 	unsigned int charCount = (unsigned char) buf[1];
+	printf("Tamanho da palavra: %u\n", charCount);
 	char cword[charCount];
 	init_cword(cword, charCount);
-	//puts(buf);
 
 	while(1){
+
+		//pergunta ao usuário o palpite
 		char c[BUFSIZ];
 		printf("Palpite: ");
 		scanf("%s", c);
@@ -45,6 +45,7 @@ int main(int argc, char **argv) {
 			continue;
 		} 
 
+		//envia o palpite do usuário para o servidor
 		memset(buf, 0, BUFSZ);
 		buf[0] = 2;
 		buf[1] = c[0];
@@ -53,17 +54,18 @@ int main(int argc, char **argv) {
 			logError("send");
 		}
 		
+		//recebe do servidor a resposta ao palpite
 		memset(buf, 0, BUFSZ);
 		recv(ssocket, buf, BUFSZ, 0);
 			
 		int type = buf[0];
 
-		//puts(buf);
-		if (type == 4){ //guessed all
+		//decodigica mensagem enviada pelo servidor
+		if (type == 4){ //caso tenha encerrado o jogo
 			end_game(cword, charCount, c[0]);
 			break;
-		}else{
-			read_server_reply(cword, buf, c[0], charCount);
+		}else{ //caso seja a resposta ao palpite
+			read_server_reply(cword, buf, c[0], charCount); 
 		}
 	}
 
